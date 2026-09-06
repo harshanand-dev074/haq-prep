@@ -1844,7 +1844,7 @@ export default function App() {
     setAuthMode("auth");
   }, []);
 
-  // ��─ Android hardware back button (History API) ──────────────────────────────
+  // ���─ Android hardware back button (History API) ──────────────────────────────
   // Maps each in-app screen to the screen the back button should return to.
   // Screens not listed here (e.g. "library") are treated as the app root.
   const BACK_PARENT = { home: "library", analytics: "library", settings: "library", quiz: "library", result: "library", review: "result", folder: "library" };
@@ -1985,14 +1985,8 @@ export default function App() {
 
   // Shared post-sign-in handler — used by both the redirect result and session restore.
   const finalizeSignIn = async (fb, u) => {
-    // ── Only allow your own account ──────────────────────────────────────────
-    if (u.email !== "harshcapricorn777@gmail.com") {
-      await fb.signOut(fb.auth);
-      setUser(null);
-      setAuthError("Cloud access is not available. Please use Guest Mode.");
-      setAuthMode("auth");
-      return;
-    }
+    // Every Firebase-authenticated user gets a private Firestore namespace.
+    // Security rules scope reads and writes to this user's UID.
     setUser(u);
     localStorage.setItem(GUEST_KEY, "cloud");
     setAuthError("");
@@ -2592,7 +2586,7 @@ export default function App() {
     <ImportLinkModal data={pendingImport} onImport={importSharedSet} onCancel={cancelImport} />
   );
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
+  // ── Loading ─────────────────────────────────────────────────────────────────��
   // Show the spinner for at least ~2s on mount AND until auth state resolves.
   // Keeps the logo visible the whole time so this feels continuous with the
   // native OS splash screen instead of dropping to a bare spinner.
