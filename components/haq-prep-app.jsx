@@ -1844,7 +1844,7 @@ export default function App() {
     setAuthMode("auth");
   }, []);
 
-  // ����─ Android hardware back button (History API) ──────────────────────────────
+  // ��─ Android hardware back button (History API) ──────────────────────────────
   // Maps each in-app screen to the screen the back button should return to.
   // Screens not listed here (e.g. "library") are treated as the app root.
   const BACK_PARENT = { home: "library", analytics: "library", settings: "library", quiz: "library", result: "library", review: "result", folder: "library" };
@@ -2543,47 +2543,53 @@ export default function App() {
     const topics = [...new Set((set.questions||[]).map(q=>q.topic||"General"))];
     const setSessions = (analytics?.sessions||[]).filter(s=>s.setTitle===set.title);
     const bestAcc = setSessions.length>0 ? Math.max(...setSessions.map(s=>(s.correct+s.wrong)>0?Math.round(s.correct/(s.correct+s.wrong)*100):0)) : null;
-    const practice = () => { setActiveSet(set); setActiveKey(key); setTopic("All Topics"); setMode("full"); setQCount("All"); setScreen("home"); };
     return (
-      <article key={key} className="library-set-card" style={{borderColor:gradeInfo.grade==="?"?"#21262d":gradeInfo.borderColor}}>
-        <div className="set-card-main">
-          <div className="set-card-title-row">
-            <div className="set-grade" style={{background:gradeInfo.bg,borderColor:gradeInfo.borderColor,color:gradeInfo.color}}>{gradeInfo.grade}</div>
-            <div className="set-title">{set.title}</div>
-            <button onClick={()=>setRenameKey(key)} title="Rename set" className="set-icon-button">✏️</button>
-          </div>
-          <div className="set-meta">
-            {set.count} questions · {new Date(set.savedAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
-            {bestAcc !== null && <span className="set-best">Best {bestAcc}%</span>}
-          </div>
-          {gradeInfo.grade !== "?" && <div className="set-review" style={{color:gradeInfo.color}}>{new Set([...d.bk,...d.inc]).size} of {d.att.size} attempted need review ({gradeInfo.problemPct}%)</div>}
-          {staleCount>0 && (
-            <div className="set-warning">
-              <span>{staleCount} question{staleCount!==1?"s":""} have stale review data.</span>
-              <button onClick={async()=>{ const n=await fixStaleData([key]); showToast(`Fixed ${n} question${n!==1?"s":""}`); }}>Fix</button>
+      <div key={key} style={{background:"#161b22",borderRadius:14,padding:"16px 18px",border:`1px solid ${gradeInfo.grade==="?"?"#21262d":gradeInfo.borderColor}`,marginBottom:10}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+          <div style={{flex:1,minWidth:0}}>
+            {/* Title row with grade badge */}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+              <div style={{minWidth:28,height:28,borderRadius:8,background:gradeInfo.bg,border:`1.5px solid ${gradeInfo.borderColor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:900,color:gradeInfo.color,flexShrink:0,letterSpacing:"-0.5px"}}>
+                {gradeInfo.grade}
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{set.title}</div>
+              <button onClick={()=>setRenameKey(key)} title="Rename" style={{background:"none",border:"none",color:"#64748b",fontSize:13,cursor:"pointer",padding:2,flexShrink:0,lineHeight:1}}>✏️</button>
             </div>
-          )}
-          <div className="set-badges">
-            {d.bk.size>0 && <span className="set-badge bookmark">🔖 {d.bk.size}</span>}
-            {d.inc.size>0 && <span className="set-badge incorrect">❌ {d.inc.size}</span>}
-            {srsDue>0 && <span className="set-badge due">🔁 {srsDue} due</span>}
-            {setSessions.length>0 && <span className="set-badge sessions">{setSessions.length} sessions</span>}
+            <div style={{color:"#64748b",fontSize:11,marginBottom:8,paddingLeft:36}}>
+              {set.count} Qs · {new Date(set.savedAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
+              {bestAcc !== null && <span style={{color:"#a78bfa",marginLeft:8}}>· Best {bestAcc}%</span>}
+              {gradeInfo.grade !== "?" && <span style={{color:gradeInfo.color,marginLeft:8}}>· {new Set([...d.bk,...d.inc]).size} of {d.att.size} attempted need review ({gradeInfo.problemPct}%)</span>}
+            </div>
+            {staleCount>0 && (
+              <div style={{display:"flex",alignItems:"center",gap:8,background:"#1a1508",border:"1px solid #78530f",borderRadius:8,padding:"6px 10px",marginBottom:8,marginLeft:36}}>
+                <span style={{color:"#fbbf24",fontSize:10.5,flex:1}}>⚠️ {staleCount} question{staleCount!==1?"s":""} marked wrong/bookmarked but not counted as attempted — likely from a restored backup.</span>
+                <button onClick={async()=>{ const n=await fixStaleData([key]); showToast(`✅ Fixed ${n} question${n!==1?"s":""}`); }} style={{background:"#78530f",color:"#fef3c7",border:"none",borderRadius:6,padding:"4px 10px",fontSize:10.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Fix</button>
+              </div>
+            )}
+            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
+              {d.bk.size>0 && <span style={{background:"#a78bfa22",color:"#a78bfa",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>🔖 {d.bk.size}</span>}
+              {d.inc.size>0 && <span style={{background:"#f8717122",color:"#f87171",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>❌ {d.inc.size}</span>}
+              {srsDue>0 && <span style={{background:"#60a5fa22",color:"#60a5fa",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:700}}>🔁 {srsDue} due</span>}
+              {setSessions.length>0 && <span style={{background:"#60a5fa11",color:"#475569",borderRadius:6,padding:"2px 8px",fontSize:10,fontWeight:600}}>📊 {setSessions.length} sessions</span>}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {topics.slice(0,4).map(t=>(
+                <span key={t} style={{background:"#0d1117",color:"#94a3b8",borderRadius:6,padding:"2px 7px",fontSize:9}}>{t}</span>
+              ))}
+              {topics.length>4 && <span style={{background:"#0d1117",color:"#64748b",borderRadius:6,padding:"2px 7px",fontSize:9}}>+{topics.length-4} more</span>}
+            </div>
           </div>
-          <div className="set-topics">
-            {topics.slice(0,4).map(t=><span key={t}>{t}</span>)}
-            {topics.length>4 && <span>+{topics.length-4} more</span>}
+          <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
+            <button onClick={()=>{setActiveSet(set);setActiveKey(key);setTopic("All Topics");setMode("full");setQCount("All");setScreen("home");}} style={{background:"linear-gradient(90deg,#0d9488,#2dd4bf)",color:"#0f172a",border:"none",borderRadius:8,padding:"8px 14px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Practice →</button>
+            <button onClick={()=>setMoveSetKey(key)} style={{background:"#161b22",color:"#fbbf24",border:"none",borderRadius:8,padding:"5px 14px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>📁 Move</button>
+            <button onClick={()=>setExportSet(set)} style={{background:"#161b22",color:"#2dd4bf",border:"1px solid #2dd4bf30",borderRadius:8,padding:"5px 14px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>⬇ Export</button>
+            {(d.bk.size>0 || d.inc.size>0 || d.att.size>0) && (
+              <button onClick={()=>setResetKey(key)} style={{background:"#161b22",color:"#fbbf24",border:"1px solid #fbbf2430",borderRadius:8,padding:"5px 14px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>🔄 Reset</button>
+            )}
+            <button onClick={()=>setDelKey(key)} style={{background:"#161b22",color:"#f87171",border:"none",borderRadius:8,padding:"5px 14px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>🗑️ Delete</button>
           </div>
         </div>
-        <div className="set-card-actions">
-          <button onClick={practice} className="set-practice">Practice <span aria-hidden="true">→</span></button>
-          <div className="set-secondary-actions">
-            <button onClick={()=>setMoveSetKey(key)}>Move</button>
-            <button onClick={()=>setExportSet(set)}>Export</button>
-            {(d.bk.size>0 || d.inc.size>0 || d.att.size>0) && <button onClick={()=>setResetKey(key)}>Reset</button>}
-            <button onClick={()=>setDelKey(key)} className="danger">Delete</button>
-          </div>
-        </div>
-      </article>
+      </div>
     );
   };
 
@@ -2592,7 +2598,7 @@ export default function App() {
     <ImportLinkModal data={pendingImport} onImport={importSharedSet} onCancel={cancelImport} />
   );
 
-  // ── Loading ─────────────────────────────────────────────────────────────────��
+  // ── Loading ──────────────────────────────────────────────────────────────────
   // Show the spinner for at least ~2s on mount AND until auth state resolves.
   // Keeps the logo visible the whole time so this feels continuous with the
   // native OS splash screen instead of dropping to a bare spinner.
@@ -3038,18 +3044,19 @@ export default function App() {
         {toast && <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:"#0d2a1f",border:"1px solid #166534",borderRadius:10,padding:"10px 18px",color:"#4ade80",fontSize:13,zIndex:300,whiteSpace:"nowrap",boxShadow:"0 4px 20px #00000060"}}>{toast}</div>}
 
         <div style={{maxWidth:580,margin:"0 auto"}}>
-          <div className="folder-header">
-            <div className="folder-header-top">
-              <button onClick={()=>goBack("library")} className="library-back-button"><span aria-hidden="true">‹</span> Library</button>
-              <div className="folder-title-block">
-                <span className="folder-icon" aria-hidden="true">📁</span>
-                <div>
-                  <div className="folder-title">{folder.name}</div>
-                  <div className="folder-meta">{folderSetEntries.length} set{folderSetEntries.length!==1?"s":""}{folderPct!==null && <span style={{color:folderPct>=50?"#f87171":folderPct>=25?"#fbbf24":"#4ade80"}}> · {folderNeedCount} of {folderAttCount} need review ({folderPct}%)</span>}</div>
-                </div>
+          <div style={{background:"#161b22",borderRadius:16,padding:"18px 20px",marginBottom:16,border:"1px solid #21262d"}}>
+            <button onClick={()=>goBack("library")} style={{display:"inline-flex",alignItems:"center",gap:7,background:"#0d1117",border:"1px solid #21262d",borderRadius:10,padding:"8px 14px 8px 10px",cursor:"pointer",fontFamily:"inherit",marginBottom:14}}>
+              <div style={{width:20,height:20,borderRadius:6,background:"#161b22",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b",fontSize:14,lineHeight:1}}>‹</div>
+              <span style={{color:"#64748b",fontSize:12,fontWeight:600}}>Library</span>
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <span style={{fontSize:26,flexShrink:0}}>📁</span>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:18,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.name}</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{folderSetEntries.length} set{folderSetEntries.length!==1?"s":""}{folderPct!==null && <span style={{color:folderPct>=50?"#f87171":folderPct>=25?"#fbbf24":"#4ade80"}}> · {folderNeedCount} of {folderAttCount} attempted need review ({folderPct}%)</span>}</div>
               </div>
             </div>
-            <div className="folder-actions">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
                 <button onClick={()=>{
                   const folderKeys = folderSetEntries.map(([key])=>key);
                   const filteredLib = Object.fromEntries(folderKeys.map(k=>[k,(lib||{})[k]]));
