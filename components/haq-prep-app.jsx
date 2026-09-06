@@ -3425,7 +3425,7 @@ export default function App() {
         <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",marginBottom:10,gap:8}}>
           <div style={{display:"flex",gap:5}}>
             <button onClick={()=>setShowPal(true)} style={{background:"#161b22",color:"#94a3b8",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>⊞ {cur+1}/{qs.length}</button>
-            <button onClick={()=>setShowRst(true)} style={{background:"#161b22",color:"#f87171",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>��</button>
+            <button onClick={()=>setShowRst(true)} title="Reset quiz" aria-label="Reset quiz" style={{background:"#161b22",color:"#f87171",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>↻</button>
             <button onClick={handleFinishClick} style={{background:"#161b22",color:"#fbbf24",border:"1px solid #fbbf2466",borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>🏁 Submit</button>
           </div>
           <div style={{textAlign:"center"}}>
