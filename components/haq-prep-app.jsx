@@ -1844,7 +1844,7 @@ export default function App() {
     setAuthMode("auth");
   }, []);
 
-  // ── Android hardware back button (History API) ──────────────────────────────
+  // ��─ Android hardware back button (History API) ──────────────────────────────
   // Maps each in-app screen to the screen the back button should return to.
   // Screens not listed here (e.g. "library") are treated as the app root.
   const BACK_PARENT = { home: "library", analytics: "library", settings: "library", quiz: "library", result: "library", review: "result", folder: "library" };
@@ -3425,7 +3425,7 @@ export default function App() {
         <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",marginBottom:10,gap:8}}>
           <div style={{display:"flex",gap:5}}>
             <button onClick={()=>setShowPal(true)} style={{background:"#161b22",color:"#94a3b8",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>⊞ {cur+1}/{qs.length}</button>
-            <button onClick={()=>setShowRst(true)} style={{background:"#161b22",color:"#f87171",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>↺</button>
+            <button onClick={()=>setShowRst(true)} style={{background:"#161b22",color:"#f87171",border:"1px solid #21262d",borderRadius:8,padding:"5px 9px",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>��</button>
             <button onClick={handleFinishClick} style={{background:"#161b22",color:"#fbbf24",border:"1px solid #fbbf2466",borderRadius:8,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>🏁 Submit</button>
           </div>
           <div style={{textAlign:"center"}}>
@@ -3466,7 +3466,7 @@ export default function App() {
           {q.options.map((opt,i)=>{
             let bg2="#1e293b",bc="#334155",cc="#cbd5e1",icon=null;
             if(revealed){
-              if(i===q.answer){bg2="#022c22";bc="#4ade80";cc="#4ade80";icon="��";}
+              if(i===q.answer){bg2="#022c22";bc="#4ade80";cc="#4ade80";icon="✓";}
               else if(qa?.selected===i){bg2="#2d0a0a";bc="#f87171";cc="#f87171";icon="✗";}
               else{cc="#475569";}
             }
