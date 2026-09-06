@@ -1727,6 +1727,8 @@ export default function App() {
     try { return parseInt(localStorage.getItem("haq_usage_dismissed")||"0",10); } catch { return 0; }
   });
   const [focusSort, setFocusSort]     = useState(false); // false=date order, true=grade worst-first
+  const [setSearch, setSetSearch]     = useState(""); // search query for filtering sets in library/folder lists
+  const [expandedSetKeys, setExpandedSetKeys] = useState(() => new Set()); // which set cards are expanded to full detail
   const [activeFolderKey, setActiveFolderKey] = useState(null); // folder currently open (screen === "folder")
   const [showNewFolder, setShowNewFolder]     = useState(false);
   const [renameFolderKey, setRenameFolderKey] = useState(null);
@@ -2537,6 +2539,44 @@ export default function App() {
 
   // Shared set-card renderer — used on both the main Library screen (unfiled sets)
   // and inside an open Folder screen.
+  const toggleSetExpand = (key) => {
+    setExpandedSetKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  // Compact single-line row for a set. Tapping the row expands it into the
+  // full renderSetCard detail view (in place); tapping Practice starts the
+  // quiz directly without expanding. Keeps long lists (30-50+ sets) scannable.
+  const renderSetRow = (entry) => {
+    const [key, set, d, gradeInfo] = entry;
+    if (expandedSetKeys.has(key)) {
+      return (
+        <div key={key}>
+          {renderSetCard(entry)}
+          <button onClick={()=>toggleSetExpand(key)} style={{width:"100%",background:"none",border:"none",color:"#64748b",fontSize:11,padding:"0 0 10px",cursor:"pointer",fontFamily:"inherit",marginTop:-6}}>▲ Collapse</button>
+        </div>
+      );
+    }
+    const srsDue = getSrsDueCount(key);
+    return (
+      <div key={key} onClick={()=>toggleSetExpand(key)} role="button" tabIndex={0}
+        onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleSetExpand(key); } }}
+        style={{display:"flex",alignItems:"center",gap:10,background:"#161b22",border:`1px solid ${gradeInfo.grade==="?"?"#21262d":gradeInfo.borderColor}`,borderRadius:10,padding:"10px 12px",marginBottom:6,cursor:"pointer"}}>
+        <div style={{minWidth:26,height:26,borderRadius:7,background:gradeInfo.bg,border:`1.5px solid ${gradeInfo.borderColor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:gradeInfo.color,flexShrink:0}}>{gradeInfo.grade}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13.5,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{set.title}</div>
+          <div style={{fontSize:10.5,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            {set.count} Qs{srsDue>0 && <span style={{color:"#60a5fa"}}> · {srsDue} due</span>}{gradeInfo.grade!=="?" && <span style={{color:gradeInfo.color}}> · {gradeInfo.problemPct}% review</span>}
+          </div>
+        </div>
+        <button onClick={(e)=>{e.stopPropagation();setActiveSet(set);setActiveKey(key);setTopic("All Topics");setMode("full");setQCount("All");setScreen("home");}} style={{background:"linear-gradient(90deg,#0d9488,#2dd4bf)",color:"#0f172a",border:"none",borderRadius:7,padding:"7px 12px",fontSize:11.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>Practice →</button>
+      </div>
+    );
+  };
+
   const renderSetCard = ([key, set, d, gradeInfo]) => {
     const srsDue = getSrsDueCount(key);
     const staleCount = getStaleCount(key);
@@ -2941,16 +2981,26 @@ export default function App() {
             </div>
           )}
 
+          {sortedSets.length > 5 && (
+            <input type="text" value={setSearch} onChange={(e)=>setSetSearch(e.target.value)} placeholder="Search sets..."
+              style={{width:"100%",background:"#0d1117",border:"1px solid #21262d",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f1f5f9",fontFamily:"inherit",marginBottom:12,boxSizing:"border-box"}}/>
+          )}
+
           {(() => {
-            const gradedOnlySets = sortedSets.filter(([,,,g]) => g.grade !== "?");
-            const notStartedSets = sortedSets.filter(([,,,g]) => g.grade === "?");
+            const q = setSearch.trim().toLowerCase();
+            const filtered = q ? sortedSets.filter(([,set]) => set.title.toLowerCase().includes(q)) : sortedSets;
+            const gradedOnlySets = filtered.filter(([,,,g]) => g.grade !== "?");
+            const notStartedSets = filtered.filter(([,,,g]) => g.grade === "?");
+            if (q && filtered.length === 0) {
+              return <div style={{color:"#64748b",fontSize:13,textAlign:"center",padding:"20px 0"}}>No sets match "{setSearch}".</div>;
+            }
             return (
               <>
-                {gradedOnlySets.map(renderSetCard)}
+                {gradedOnlySets.map(renderSetRow)}
                 {notStartedSets.length > 0 && (
                   <>
                     <div style={{color:"#64748b",fontSize:11,fontWeight:700,marginTop:gradedOnlySets.length>0?16:0,marginBottom:8,paddingLeft:2,textTransform:"uppercase",letterSpacing:"0.5px"}}>○ Not Started</div>
-                    {notStartedSets.map(renderSetCard)}
+                    {notStartedSets.map(renderSetRow)}
                   </>
                 )}
               </>
@@ -3107,16 +3157,26 @@ export default function App() {
             </div>
           )}
 
+          {sortedFolderSets.length > 5 && (
+            <input type="text" value={setSearch} onChange={(e)=>setSetSearch(e.target.value)} placeholder="Search sets in this folder..."
+              style={{width:"100%",background:"#0d1117",border:"1px solid #21262d",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f1f5f9",fontFamily:"inherit",marginBottom:12,boxSizing:"border-box"}}/>
+          )}
+
           {(() => {
-            const gradedOnlyFolderSets = sortedFolderSets.filter(([,,,g]) => g.grade !== "?");
-            const notStartedFolderSets = sortedFolderSets.filter(([,,,g]) => g.grade === "?");
+            const q = setSearch.trim().toLowerCase();
+            const filtered = q ? sortedFolderSets.filter(([,set]) => set.title.toLowerCase().includes(q)) : sortedFolderSets;
+            const gradedOnlyFolderSets = filtered.filter(([,,,g]) => g.grade !== "?");
+            const notStartedFolderSets = filtered.filter(([,,,g]) => g.grade === "?");
+            if (q && filtered.length === 0) {
+              return <div style={{color:"#64748b",fontSize:13,textAlign:"center",padding:"20px 0"}}>No sets match "{setSearch}".</div>;
+            }
             return (
               <>
-                {gradedOnlyFolderSets.map(renderSetCard)}
+                {gradedOnlyFolderSets.map(renderSetRow)}
                 {notStartedFolderSets.length > 0 && (
                   <>
                     <div style={{color:"#64748b",fontSize:11,fontWeight:700,marginTop:gradedOnlyFolderSets.length>0?16:0,marginBottom:8,paddingLeft:2,textTransform:"uppercase",letterSpacing:"0.5px"}}>○ Not Started</div>
-                    {notStartedFolderSets.map(renderSetCard)}
+                    {notStartedFolderSets.map(renderSetRow)}
                   </>
                 )}
               </>
