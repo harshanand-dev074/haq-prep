@@ -1727,6 +1727,7 @@ export default function App() {
     try { return parseInt(localStorage.getItem("haq_usage_dismissed")||"0",10); } catch { return 0; }
   });
   const [focusSort, setFocusSort]     = useState(false); // false=date order, true=grade worst-first
+  const [reorderMode, setReorderMode] = useState(false); // manual up/down reordering of sets within a folder
   const [setSearch, setSetSearch]     = useState(""); // search query for filtering sets in library/folder lists
   const [expandedSetKeys, setExpandedSetKeys] = useState(() => new Set()); // which set cards are expanded to full detail
   const [activeFolderKey, setActiveFolderKey] = useState(null); // folder currently open (screen === "folder")
@@ -1763,6 +1764,9 @@ export default function App() {
     const t = setTimeout(() => setBootReady(true), 2000);
     return () => clearTimeout(t);
   }, []);
+
+  // Exit reorder mode whenever the active folder changes or the folder screen is left.
+  useEffect(() => { setReorderMode(false); }, [activeFolderKey, screen]);
 
   // ── Detect a shared set in the URL (#import=<code>) on first load ─────────────
   useEffect(() => {
@@ -3023,9 +3027,26 @@ export default function App() {
       const g = calcGrade(d, set.questions?.length||set.count||0);
       return [key, set, d, g];
     });
+    const orderIndexOf = (key) => {
+      const order = folder.setOrder || [];
+      const idx = order.indexOf(key);
+      return idx === -1 ? Infinity : idx;
+    };
+    const customOrderedFolderSets = [...gradedFolderSets].sort((a,b) => orderIndexOf(a[0]) - orderIndexOf(b[0])); // stable: untouched sets keep their original (date) relative order
     const sortedFolderSets = focusSort
       ? [...gradedFolderSets].sort((a,b) => (GRADE_ORDER[a[3].grade]??5) - (GRADE_ORDER[b[3].grade]??5))
-      : gradedFolderSets;
+      : customOrderedFolderSets;
+    // Builds a complete manual order array (existing custom order + any sets not yet in it, appended in their current display order) before swapping two adjacent entries.
+    const moveSetInFolder = async (key, direction) => {
+      const existing = (folder.setOrder || []).filter(k => folderSetEntries.some(([fk]) => fk === k));
+      const existingSet = new Set(existing);
+      const fullOrder = [...existing, ...customOrderedFolderSets.map(([k]) => k).filter(k => !existingSet.has(k))];
+      const idx = fullOrder.indexOf(key);
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (idx === -1 || swapIdx < 0 || swapIdx >= fullOrder.length) return;
+      [fullOrder[idx], fullOrder[swapIdx]] = [fullOrder[swapIdx], fullOrder[idx]];
+      await persistFolders({ ...folders, [activeFolderKey]: { ...folder, setOrder: fullOrder } });
+    };
     let folderNeedCount=0, folderAttCount=0;
     gradedFolderSets.forEach(([,,d,g]) => { if (g.grade==="?") return; folderNeedCount += new Set([...d.bk,...d.inc]).size; folderAttCount += d.att.size; });
     const folderPct = folderAttCount>0 ? Math.round(folderNeedCount/folderAttCount*100) : null;
@@ -3142,10 +3163,17 @@ export default function App() {
           </div>
 
           {folderSetEntries.length > 0 && (
-            <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-              <button onClick={()=>setFocusSort(v=>!v)} style={{background:focusSort?"#f8717122":"#161b22",color:focusSort?"#f87171":"#64748b",border:`1px solid ${focusSort?"#f8717150":"#21262d"}`,borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
-                {focusSort?"🎯 Focus Sort ON":"🎯 Focus Sort"}
-              </button>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:12}}>
+              {!reorderMode && (
+                <button onClick={()=>setFocusSort(v=>!v)} style={{background:focusSort?"#f8717122":"#161b22",color:focusSort?"#f87171":"#64748b",border:`1px solid ${focusSort?"#f8717150":"#21262d"}`,borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+                  {focusSort?"🎯 Focus Sort ON":"🎯 Focus Sort"}
+                </button>
+              )}
+              {!focusSort && folderSetEntries.length > 1 && (
+                <button onClick={()=>setReorderMode(v=>!v)} style={{background:reorderMode?"#60a5fa22":"#161b22",color:reorderMode?"#60a5fa":"#64748b",border:`1px solid ${reorderMode?"#60a5fa50":"#21262d"}`,borderRadius:8,padding:"5px 12px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+                  {reorderMode?"✓ Done":"↕ Reorder"}
+                </button>
+              )}
             </div>
           )}
 
@@ -3158,31 +3186,49 @@ export default function App() {
             </div>
           )}
 
-          {sortedFolderSets.length > 5 && (
-            <input type="text" value={setSearch} onChange={(e)=>setSetSearch(e.target.value)} placeholder="Search sets in this folder..."
-              style={{width:"100%",background:"#0d1117",border:"1px solid #21262d",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f1f5f9",fontFamily:"inherit",marginBottom:12,boxSizing:"border-box"}}/>
-          )}
+          {reorderMode ? (
+            <div style={{marginBottom:8}}>
+              <div style={{color:"#60a5fa",fontSize:11.5,marginBottom:10,background:"#0f1a2d",border:"1px solid #1e3a6e",borderRadius:8,padding:"8px 12px"}}>↕ Use the arrows to reorder sets in this folder. Tap "Done" when finished.</div>
+              {sortedFolderSets.map(([key, set], idx, arr) => (
+                <div key={key} style={{display:"flex",alignItems:"center",gap:10,background:"#161b22",border:"1px solid #21262d",borderRadius:10,padding:"10px 12px",marginBottom:6}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
+                    <button onClick={()=>moveSetInFolder(key,"up")} disabled={idx===0} style={{background:"#0d1117",border:"none",borderRadius:6,width:26,height:22,color:idx===0?"#334155":"#94a3b8",cursor:idx===0?"default":"pointer",fontSize:11,lineHeight:1,fontFamily:"inherit"}}>▲</button>
+                    <button onClick={()=>moveSetInFolder(key,"down")} disabled={idx===arr.length-1} style={{background:"#0d1117",border:"none",borderRadius:6,width:26,height:22,color:idx===arr.length-1?"#334155":"#94a3b8",cursor:idx===arr.length-1?"default":"pointer",fontSize:11,lineHeight:1,fontFamily:"inherit"}}>▼</button>
+                  </div>
+                  <div style={{flex:1,minWidth:0,fontSize:13.5,fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{set.title}</div>
+                  <div style={{color:"#64748b",fontSize:11,flexShrink:0}}>{set.count} Qs</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {sortedFolderSets.length > 5 && (
+                <input type="text" value={setSearch} onChange={(e)=>setSetSearch(e.target.value)} placeholder="Search sets in this folder..."
+                  style={{width:"100%",background:"#0d1117",border:"1px solid #21262d",borderRadius:10,padding:"9px 12px",fontSize:13,color:"#f1f5f9",fontFamily:"inherit",marginBottom:12,boxSizing:"border-box"}}/>
+              )}
 
-          {(() => {
-            const q = setSearch.trim().toLowerCase();
-            const filtered = q ? sortedFolderSets.filter(([,set]) => set.title.toLowerCase().includes(q)) : sortedFolderSets;
-            const gradedOnlyFolderSets = filtered.filter(([,,,g]) => g.grade !== "?");
-            const notStartedFolderSets = filtered.filter(([,,,g]) => g.grade === "?");
-            if (q && filtered.length === 0) {
-              return <div style={{color:"#64748b",fontSize:13,textAlign:"center",padding:"20px 0"}}>No sets match "{setSearch}".</div>;
-            }
-            return (
-              <>
-                {gradedOnlyFolderSets.map(renderSetRow)}
-                {notStartedFolderSets.length > 0 && (
+              {(() => {
+                const q = setSearch.trim().toLowerCase();
+                const filtered = q ? sortedFolderSets.filter(([,set]) => set.title.toLowerCase().includes(q)) : sortedFolderSets;
+                const gradedOnlyFolderSets = filtered.filter(([,,,g]) => g.grade !== "?");
+                const notStartedFolderSets = filtered.filter(([,,,g]) => g.grade === "?");
+                if (q && filtered.length === 0) {
+                  return <div style={{color:"#64748b",fontSize:13,textAlign:"center",padding:"20px 0"}}>No sets match "{setSearch}".</div>;
+                }
+                return (
                   <>
-                    <div style={{color:"#64748b",fontSize:11,fontWeight:700,marginTop:gradedOnlyFolderSets.length>0?16:0,marginBottom:8,paddingLeft:2,textTransform:"uppercase",letterSpacing:"0.5px"}}>○ Not Started</div>
-                    {notStartedFolderSets.map(renderSetRow)}
+                    {gradedOnlyFolderSets.map(renderSetRow)}
+                    {notStartedFolderSets.length > 0 && (
+                      <>
+                        <div style={{color:"#64748b",fontSize:11,fontWeight:700,marginTop:gradedOnlyFolderSets.length>0?16:0,marginBottom:8,paddingLeft:2,textTransform:"uppercase",letterSpacing:"0.5px"}}>○ Not Started</div>
+                        {notStartedFolderSets.map(renderSetRow)}
+                      </>
+                    )}
                   </>
-                )}
-              </>
-            );
-          })()}
+                );
+              })()}
+            </>
+          )}
         </div>
       </div>
     );
