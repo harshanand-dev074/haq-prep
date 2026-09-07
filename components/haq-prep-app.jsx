@@ -2837,7 +2837,7 @@ export default function App() {
               </div>
               <div style={{minWidth:0}}>
                 <div style={{fontFamily:"'Courier New',monospace",fontSize:18,fontWeight:800,color:"#f1f5f9",letterSpacing:"-0.3px",whiteSpace:"nowrap"}}>haq<span style={{color:"#2dd4bf"}}>/</span>prep</div>
-                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{sets.length} set{sets.length!==1?"s":""} in library</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{sets.length} set{sets.length!==1?"s":""} in library · {sets.reduce((t,[,s]) => t + (s.count || s.questions?.length || 0), 0)} questions</div>
               </div>
             </div>
             <div style={{display:"flex",gap:8}}>
@@ -3029,6 +3029,7 @@ export default function App() {
     let folderNeedCount=0, folderAttCount=0;
     gradedFolderSets.forEach(([,,d,g]) => { if (g.grade==="?") return; folderNeedCount += new Set([...d.bk,...d.inc]).size; folderAttCount += d.att.size; });
     const folderPct = folderAttCount>0 ? Math.round(folderNeedCount/folderAttCount*100) : null;
+    const folderTotalQuestions = folderSetEntries.reduce((t,[,set]) => t + (set.count || set.questions?.length || 0), 0);
     const staleFolderKeys = folderSetEntries.map(([key])=>key).filter(key=>getStaleCount(key)>0);
     const staleFolderTotal = staleFolderKeys.reduce((t,key)=>t+getStaleCount(key),0);
     return (
@@ -3103,7 +3104,7 @@ export default function App() {
               <span style={{fontSize:26,flexShrink:0}}>📁</span>
               <div style={{minWidth:0}}>
                 <div style={{fontSize:18,fontWeight:800,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{folder.name}</div>
-                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{folderSetEntries.length} set{folderSetEntries.length!==1?"s":""}{folderPct!==null && <span style={{color:folderPct>=50?"#f87171":folderPct>=25?"#fbbf24":"#4ade80"}}> · {folderNeedCount} of {folderAttCount} attempted need review ({folderPct}%)</span>}</div>
+                <div style={{color:"#64748b",fontSize:11,marginTop:1}}>{folderSetEntries.length} set{folderSetEntries.length!==1?"s":""} · {folderTotalQuestions} questions{folderPct!==null && <span style={{color:folderPct>=50?"#f87171":folderPct>=25?"#fbbf24":"#4ade80"}}> · {folderNeedCount} of {folderAttCount} attempted need review ({folderPct}%)</span>}</div>
               </div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6}}>
