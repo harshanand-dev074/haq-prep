@@ -3554,7 +3554,6 @@ export default function App() {
         )}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            <span style={{background:tCol+"22",color:tCol,padding:"2px 9px",borderRadius:99,fontSize:9,fontWeight:700}}>{q.topic}</span>
             {mode==="srs"&&<span style={{background:"#60a5fa22",color:"#60a5fa",padding:"2px 9px",borderRadius:99,fontSize:9,fontWeight:700}}>🔁 SRS</span>}
             {q.type==="ar"&&<span style={{background:"#f472b622",color:"#f472b6",padding:"2px 9px",borderRadius:99,fontSize:9,fontWeight:700}}>A/R</span>}
             {q.type==="stmt"&&<span style={{background:"#60a5fa22",color:"#60a5fa",padding:"2px 9px",borderRadius:99,fontSize:9,fontWeight:700}}>Statement</span>}
